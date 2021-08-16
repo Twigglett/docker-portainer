@@ -1,0 +1,44 @@
+version: "3"
+
+networks:
+  dns:
+    name: dns
+    ipam:
+     config:
+       - subnet: 172.18.0.0/16
+       - gateway: 172.18.0.1
+
+# More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "8081:80/tcp"
+    environment:
+      TZ: 'Australia/Darwin'
+      # WEBPASSWORD: 'set a secure password here or it will be random'
+    # Volumes store your data between container upgrades
+    volumes:
+      - '/opt/docker/pihole/etc/pihole/:/etc/pihole/'
+      - '/opt/docker/pihole/etc/dnsmasq.d/:/etc/dnsmasq.d/'
+    # Recommended but not required (DHCP needs NET_ADMIN)
+    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+    cap_add:
+      - NET_ADMIN
+    networks:
+      dns:
+        ipv4_address: 172.18.0.2
+    restart: unless-stopped
+
+  # compose file adapted from docker run command on bind9 docker page
+  # https://hub.docker.com/r/internetsystemsconsortium/bind9
+  bind9:
+    container_name: bind9
+    image: "internetsystemsconsortium/bind9:9.11"
+    restart: unless-stopped
+    networks:
+      dns:
+        ipv4_address: 172.18.0.3
